@@ -1,0 +1,157 @@
+---
+title: "6300 Mini Project"
+subtitle: "Airline Delay and Cancellation Analysis — August 2018"
+author: "Junyi Tang"
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    theme: cosmo
+    code-fold: true
+execute:
+  echo: true
+  warning: false
+  message: false
+---
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(ggplot2)
+```
+
+# Introduction
+This report analyzes U.S. airline on-time performance for August 2018 using data from DOT On-Time Performance database. Each row in the dataset represents a single flight and includes information such as the carrier, origin and destination airports, departure and arrival delays, and cancellation status, etc.
+The primary goal of this report is to identify the most reliable and unreliable airlines based on metrics such as maximum delays, early departures, worst-performing airports, and cancellation patterns. Understanding how delays and cancellations vary across airlines, airports, and busiest days of the week can help travelers make more informed decisions when planning their trips.
+
+```{r}
+#import data
+q1 <- read_csv("question1.csv") |>
+  filter(Airline != "Reporting_Airline")
+q2 <- read_csv("question2.csv") |>
+  filter(Airline != "Reporting_Airline")
+q3 <- read_csv("question3.csv")
+q4 <- read_csv("question4.csv")
+q5 <- read_csv("question5.csv") |>
+  filter(Airline != "Reporting_Airline")
+q6a <- read_csv("question6a.csv")
+q6b <- read_csv("question6b.csv")
+q7 <- read_csv("question7.csv")
+```
+# Maximum Departure Delay
+```{r}
+q1 |>
+  ggplot(aes(x = reorder(Airline, MaxDepartureDelay),
+  y = MaxDepartureDelay)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(
+  title = "Maximum Departure Delay by Airline",
+  x = "Airline Code",
+  y = "Maximum Departure Delay (minutes)"
+)
+```
+**Result and Conclusion:**
+American Airlines (AA), ExpressJet Airlines (EV), and SkyWest Airlines (OO) show the longest maximum departure delays in the dataset. These extreme delays suggest that these carriers experienced severe disruptions at least once during the month. In contrast, JetBlue (B6), Alaska Airlines (AS), and Southwest Airlines (WN) have the smallest maximum delays, indicating more stable operations with fewer extreme disruptions. Although these extreme delays may be occasional, they remain deeply frustrating for passengers, because even one major disruption can ruin an entire trip.
+
+
+# Earliest Delay
+```{r}
+q2 |>
+  ggplot(aes(x = reorder(Airline, MaxEarlyDeparture),
+  y = MaxEarlyDeparture)) +
+  geom_col(fill = "steelblue") +
+  coord_flip() +
+  labs(
+  title = "Earliest Departures by Airline",
+  x = "Airline Code",
+  y = "Most Negative Departure Delay (minutes)"
+)
+```
+**Result and Conclusion: **
+SkyWest (OO), Republic (YX), and Allegiant (G4) have the most negative departure delays, meaning they tend to depart the earliest relative to schedule. Airlines with highly negative delays may create challenges for passengers who arrive close to boarding time. Meanwhile, Spirit (NK), Delta (DL), and United (UA) show the least early departures, suggesting more predictable scheduled departure times.
+
+
+# Busiest day of the week
+```{r}
+q3 |>
+  mutate(DayOfWeek = as.factor(DayOfWeek)) |>
+  ggplot(aes(x = DayOfWeek, y = NumFlights)) +
+  geom_col(fill = "steelblue") +
+  geom_text(aes(label = BusyRank), vjust = -0.3) +
+  labs(
+  title = "Busiest Days of the Week",
+  subtitle = "Numbers above bars show rank (1 = busiest)",
+  x = "Day of Week Code",
+  y = "Number of Flights"
+)
+```
+
+**Result and Conclusion: **
+Friday is the busiest travel day of the week, followed by Thursday and Wednesday. These days reflect the traditional end-of-week travel window when both business and leisure travel are at peak. Increased traffic typically corresponds to longer lines, busier airports, and a higher likelihood of delays. Travelers who are looking for more reliable travel conditions may choose flights earlier in the week to avoid potential delays.
+
+
+# Worst Airport by Average Departure Delay for Each Airline
+```{r}
+q5 |>
+  ggplot(aes(x = Airport, y = Airline, fill = AvgDepartureDelay)) +
+  geom_tile() +
+  labs(
+  title = "Worst Airport by Average Departure Delay for Each Airline",
+  x = "Airport Code",
+  y = "Airline Code",
+  fill = "Avg Delay (min)"
+) +
+theme(axis.text.x = element_text(angle = 60, hjust = 1))
+```
+**Result and Conclusion: **
+This heatmap shows the worst airport by average departure delay for each airline in the dataset. Each square represents the airport is having significant delay at a specific airport, and the color intensity reflects the severity of the delay. The map also shows that regional carriers such as SkyWest (OO), Mesa (YV), and ExpressJet (EV), often face large delays at specific airports, and this problem may be due to tight turnaround, smaller plane, gate availability, and connecting flights. 
+
+
+# Flight Cancellation
+```{r}
+q6b_top <- q6b |>
+  arrange(desc(NumCancellations)) |>
+  slice_head(n = 20)  # top 20 airports (adjust as needed)
+
+q6b_top |>
+  ggplot(aes(x = reorder(Airport, NumCancellations),
+             y = NumCancellations,
+             fill = CancellationCode)) +
+  geom_col() +
+  coord_flip() +
+  labs(
+    title = "Top 20 Airports by Most Frequent Cancellation Reason",
+    x = "Airport",
+    y = "Number of Cancellations",
+    fill = "Cancel Code"
+  )
+```
+### Cancellation Reason Reference Table
+
+```{r}
+reason_table <- tibble(
+  Code = c("A", "B", "C"),
+  Description = c(
+    "Carrier Delay (maintenance, crew, operations)",
+    "Weather Delay (storms, visibility, unsafe conditions)",
+    "NAS Delay (air traffic control, congestion)"
+  )
+)
+
+knitr::kable(reason_table, caption = "DOT Cancellation Reason Codes")
+```
+
+**Result and Conclusion:**
+The chart highlights the 20 airports with the highest number of flight cancellations in the dataset, along with the primary reason for those cancellations. Each bar represents the number of canceled flights at an airport, and the color identifies the leading cancellation cause using the DOT codes shown in the table below the graph.
+The major airports are experiencing the most cancellation counts from Air traffic control, such as JGA, EWR, JFK, ORD. These major airport often located in the busiest cities in the country, and operating near its full capacity. 
+Its very important for travelers to keep in mind that air traffic control cancellations are more common at major hubs with complex airspace, so it means there may be delays or cancellations even under good weather conditions. 
+
+
+# Final Conclusion: 
+Based on the combined delay and cancellation metrics, the three most reliable airlines in this analysis are JetBlue (B6), Alaska Airlines (AS), and Southwest Airlines (WN). These carriers exhibit relatively small maximum delays, stable early-departure behavior, and moderate cancellation levels.
+In contrast, the three least reliable airlines appear to be ExpressJet (EV), SkyWest (OO), and American Airlines (AA). These carriers experience significant extreme delays and face operational challenges at several congested hub airports.
+Overall, this analysis demonstrates that reliability varies substantially across both airlines and airports. Travelers planning time-sensitive trips may benefit from choosing flights on more reliable carriers or avoiding airports with historically high delays and cancellations.
+
+

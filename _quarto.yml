@@ -1,0 +1,15 @@
+project:
+  type: website
+
+website:
+  title: "Airline On-Time Performance – Aug 2018"
+  navbar:
+    left:
+      - href: final-report.qmd
+        text: Home
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    number-sections: true
